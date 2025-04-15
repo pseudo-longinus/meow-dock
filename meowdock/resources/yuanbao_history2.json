@@ -1,0 +1,46 @@
+{
+    "data": {"interacted_element":[null],"action":[{"go_to_url":{"url":"https://yuanbao.tencent.com/chat/"}}], "delay": 7},
+    "children": [
+        {
+            "data": {"interacted_element":[null],"action":[{"click_element_by_text":{"text":"New Chat","element_type":"span","nth":0}}]},
+            "children": [
+                {
+                    "data": {"interacted_element":[{"tag_name":"p","xpath":"html/body/div/div/div[2]/div/div/div/div/div[3]/div/div[6]/div/div[2]/div[2]/div[2]/div/div/div/p","highlight_index":14,"entire_parent_branch_path":["div","div","div","div","div","div","div","div","div","div","div","div","div","div","div","div","div","p"],"attributes":{},"shadow_root":false,"css_selector":"html>body>div>div>div:nth-of-type(2)>div>div>div>div>div:nth-of-type(3)>div>div:nth-of-type(6)>div>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(2)>div>div>div>p","page_coordinates":null,"viewport_coordinates":null,"viewport_info":null}],"action":[{"input_text":{"index":14,"text":"给我讲一个冷笑话"}}]},
+                    "children": [
+                        {
+                            "data": {"interacted_element":[null],"action":[{"send_keys":{"keys":"Enter"}}]},
+                            "children": [
+                                {
+                                    "data": {"interacted_element":[null],"action":[{"wait_message":{}}]},
+                                    "children": [
+                                        {
+                                            "data": {"interacted_element":[null],"action":[{"done":{"text":"done.","success":true}}]}
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+				},
+				{
+                    "data": {"interacted_element":[{"tag_name":"p","xpath":"html/body/div/div/div[2]/div/div/div/div/div[3]/div/div[7]/div/div[2]/div[2]/div[2]/div/div/div/p","highlight_index":14,"entire_parent_branch_path":["div","div","div","div","div","div","div","div","div","div","div","div","div","div","div","div","div","p"],"attributes":{},"shadow_root":false,"css_selector":"html>body>div>div>div:nth-of-type(2)>div>div>div>div>div:nth-of-type(3)>div>div:nth-of-type(7)>div>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(2)>div>div>div>p","page_coordinates":null,"viewport_coordinates":null,"viewport_info":null}],"action":[{"input_text":{"index":14,"text":"给我讲一个冷笑话"}}]},
+                    "children": [
+                        {
+                            "data": {"interacted_element":[null],"action":[{"send_keys":{"keys":"Enter"}}]},
+                            "children": [
+                                {
+                                    "data": {"interacted_element":[null],"action":[{"wait_message":{}}]},
+                                    "children": [
+                                        {
+                                            "data": {"interacted_element":[null],"action":[{"done":{"text":"done.","success":true}}]}
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+				}
+			]
+        }
+    ]			
+}

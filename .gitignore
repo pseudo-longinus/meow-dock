@@ -1,0 +1,15 @@
+.env
+.*/ 
+**/__pycache__
+**/.DS_Store
+**/.env
+**/.vscode
+*.json
+!**/resources/*.json
+chrome_data/
+.cache/
+
+# Python build and release related
+dist/
+build/
+*.egg-info/
