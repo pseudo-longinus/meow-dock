@@ -40,13 +40,18 @@ app.command(name="login")(login)
 # Add deepsearch command
 @app.command(name="deepsearch")
 def deepsearch(
-    query: str = typer.Argument(..., help="搜索关键词"),
-    engines: List[str] = typer.Option(["baidu", "bing"], help="搜索引擎列表"),
-    count: int = typer.Option(10, help="返回结果数量"),
-    executor: str = typer.Option("yuanbao", help="结果处理执行器，默认为'yuanbao'"),
+    query: str = typer.Argument(..., help="Search query"),
+    engines: str = typer.Option(
+        "baidu,bing", help="Comma-separated list of search engines, e.g. baidu,bing"
+    ),
+    count: int = typer.Option(10, help="Number of results to return"),
+    executor: str = typer.Option("yuanbao", help="Result processor executor, default is 'yuanbao'"),
 ):
-    """多引擎深度搜索，自动抓取网页内容并使用AI处理结果"""
-    result = deepsearch_func(query=query, engines=engines, count=count, executor=executor)
+    """Multi-engine deep search, automatically fetches web content and processes results using AI"""
+    # Convert comma-separated engine string to list
+    engine_list = [e.strip() for e in engines.split(",") if e.strip()]
+
+    result = deepsearch_func(query=query, engines=engine_list, count=count, executor=executor)
     print(result)
 
 

@@ -98,7 +98,7 @@ meowdock execute "[你的提示词]" [AI应用名称]
 meowdock search "大型语言模型" --count 15 --engine bing
 
 # 使用多引擎深度搜索，自动抓取网页内容并使用元宝处理结果
-meowdock deepsearch "大语言模型的应用" --engines baidu bing --count 15 --executor yuanbao
+meowdock deepsearch "大语言模型的应用" --engines baidu,bing --count 15 --executor yuanbao
 
 # 使用腾讯元宝让AI讲一个冷笑话
 meowdock execute "给我讲一个冷笑话" yuanbao
