@@ -10,8 +10,12 @@ from meowdock.library.browser import find_chromium
 import pathlib
 from meowdock.library.browser.content_utils import extract_page_content
 from meowdock.cmd.execute.controller_factory import get_controller
-from meowdock.cmd.execute.executors.core import SimplifiedHistoryActionList, SimplifiedHistoryActionTreeNode
+from meowdock.cmd.execute.executors.core import (
+    SimplifiedHistoryActionList,
+    SimplifiedHistoryActionTreeNode,
+)
 from typing_extensions import override
+import importlib.resources
 
 
 COOKIES_PATH = os.getenv('COOKIES_JSON_PATH', "cookies.json")
@@ -22,6 +26,7 @@ USER_DATA_DIR = pathlib.Path(os.getenv('CHROME_USER_DATA_PATH', "chrome_data/"))
 class ExecutorWrapper(ABC):
     history_str = ''
     available_function: list[str] = []
+
     def __init__(self, headless=True, debug=False, *args, **kw):
         self._browser_config = BrowserConfig(
             headless=headless,
@@ -55,17 +60,22 @@ class ExecutorWrapper(ABC):
             b = Browser(self._browser_config)
             ctx = await b.new_context(self._browser_context_config)
             await ctx.navigate_to(r'https://yuanbao.tencent.com/chat/naQivTmsDa')
-            yield (e := Executor(
+            yield (executor := Executor(
                 browser_context=ctx,
                 controller=self.controller,
                 detailed_logging=self.debug,
                 *args,
                 **kw,
             ))
-        except:
-            if e:
-                await e.export_error_log(history=json.loads(self.history))
-            raise
+        except Exception as e:
+            if executor:
+                await executor.export_error_log(history=json.loads(self.history))
+            else: 
+                raise
+            args = list(e.args)
+            args[0] += f'\nThis is probably caused by not being logged in. \n' \
+                'You can sumbit the latest log file under "{os.getcwd()}/log/" to us by @ or github issuse.'
+            raise e.__class__(args)
         finally:
             if ctx:
                 await ctx.close()
@@ -93,20 +103,23 @@ class ExecutorWrapper(ABC):
 
 
 class ListExecutor(ExecutorWrapper):
-    history_str_path = './meowdock/resources/yuanbao_list_history.json'
+    history_str_path = 'yuanbao_list_history.json'
     available_function = ['wait_message']
 
     @override
     @property
     def history(self):
         if len(self.history_str) == 0:
-            self.history_str = open(
-                self.history_str_path, 'r', encoding='utf-8'
-            ).read()
+            with importlib.resources.files('meowdock.resources').joinpath(
+                self.history_str_path
+            ).open('r', encoding='utf-8') as f:
+                self.history_str = f.read()
         return self.history_str
 
     @override
     async def execute(self, prompt: str) -> str:
+        prompt = prompt + \
+            '\nPlease wrap your entire response inside three square brackets like this: [[[your full answer here]]]'
         async with self.get_executor() as executor:
             # First escape the prompt for JSON compatibility, and remove the enclosing double quotes
             escaped_prompt = json.dumps(prompt)[1:-1]
@@ -118,21 +131,25 @@ class ListExecutor(ExecutorWrapper):
                 executor=executor, browser_context=executor.browser_context
             )
 
+
 class TreeExecutor(ExecutorWrapper):
-    history_str_path = './meowdock/resources/yuanbao_tree_history.json'
+    history_str_path = 'yuanbao_tree_history.json'
     available_function = ['wait_message']
 
     @override
     @property
     def history(self):
         if len(self.history_str) == 0:
-            self.history_str = open(
-                self.history_str_path, 'r', encoding='utf-8'
-            ).read()
+            with importlib.resources.files('meowdock.resources').joinpath(
+                self.history_str_path
+            ).open('r', encoding='utf-8') as f:
+                self.history_str = f.read()
         return self.history_str
 
     @override
     async def execute(self, prompt: str) -> str:
+        prompt = prompt + \
+            '\nPlease wrap your entire response inside three square brackets like this: [[[your full answer here]]]'
         async with self.get_executor() as executor:
             # First escape the prompt for JSON compatibility, and remove the enclosing double quotes
             escaped_prompt = json.dumps(prompt)[1:-1]

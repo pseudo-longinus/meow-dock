@@ -19,10 +19,8 @@ def execute(
     executor = get_executor(mode, debug=debug, headless=headless)
     try:
         print(asyncio.run(executor.execute(prompt=prompt)))
-    except Exception as e:
-        args = list(e.args)
-        args[0] += f'\nThis is probably caused by not being logged in. \nYou can sumbit the latest log file under "{os.getcwd()}/log/" to us by @ or github issuse.'
-        raise e.__class__(args)
+    except:
+        raise
 
 
 

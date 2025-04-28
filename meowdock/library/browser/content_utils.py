@@ -60,38 +60,31 @@ async def extract_chinese_content(html: str) -> str:
 
 async def extract_page_content(
     page: Page,
-    filter_pattern: Optional[str] = None,
-    positive_keywords=None,
-    negative_keywords=None,
-    min_text_length=15,
-    retry_length=250,
+    min_text_length=25,
+    locator: Optional[str] = None
 ) -> str:
     """
     Extract the main content of the page. Will also enter iframes.
 
     Args:
-        html: HTML content
-        filter_pattern: Regex pattern for filtering, default is None (no filtering)
-
+        page: HTML content
+        min_text_length: minimum text length for content extraction
+        locator:
     Returns:
         Extracted main content text
     """
-
-    def parse(s):
-        return markdownify.markdownify(s)
-
-    content = parse(await page.content())
-
-    if filter_pattern:
-        pattern = re.compile(filter_pattern)
-        content = pattern.sub("", content)
-
-    for iframe in page.frames:
-        if iframe.url != page.url and not iframe.url.startswith('data:'):
-            content += f'\n\nIFRAME {iframe.url}:\n'
-            temp = parse(await iframe.content())
-            if filter_pattern:
-                temp = pattern.sub("", temp)
-            content += temp
-
-    return content
+    html = await page.content()
+    pat = re.compile(r'\[\[\[(.*?)\]\]\]', flags=re.DOTALL)
+    raw_mo = re.findall(pat, html)
+    matches = [mo for mo in raw_mo if len(mo) > min_text_length]
+    if len(matches) == 0: return ''
+    len_matches = list(map(len, matches))
+    final_match = matches[len_matches.index(max(len_matches))]
+    md = markdownify.markdownify(final_match)
+    def shorten(match):
+        s = match.group(0)
+        return s[:10] + '...' + s[-5:]
+    md = re.sub(r'\n{3,}', '\n\n', md)
+    md = re.sub(r' {3,}', '  ', md)
+    md = re.sub(r'[a-zA-Z0-9_]{20,}', shorten, md)
+    return md
