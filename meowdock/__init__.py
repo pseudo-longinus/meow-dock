@@ -1,6 +1,6 @@
 import meowdock.library.vendor_hacks
 from meowdock import config
-from meowdock.cmd.search import deepsearch
+from meowdock.main import deepsearch
 
 __all__ = ["deepsearch", "cli"]
 

@@ -55,13 +55,17 @@ class ExecutorWrapper(ABC):
             b = Browser(self._browser_config)
             ctx = await b.new_context(self._browser_context_config)
             await ctx.navigate_to(r'https://yuanbao.tencent.com/chat/naQivTmsDa')
-            yield Executor(
+            yield (e := Executor(
                 browser_context=ctx,
                 controller=self.controller,
                 detailed_logging=self.debug,
                 *args,
                 **kw,
-            )
+            ))
+        except:
+            if e:
+                await e.export_error_log(history=json.loads(self.history))
+            raise
         finally:
             if ctx:
                 await ctx.close()
@@ -80,6 +84,7 @@ class ExecutorWrapper(ABC):
         Raises:
             ValueError: When browser is not ready.
             XPathError: When the xpath of the given element doesn't exist in the current page.
+            FallbackToRootError: When every node of a tree history is searched but failed.
         '''
         pass
 
@@ -88,20 +93,24 @@ class ExecutorWrapper(ABC):
 
 
 class ListExecutor(ExecutorWrapper):
-    history_str_path = './meowdock/resources/yuanbao_history.json'
+    history_str_path = './meowdock/resources/yuanbao_list_history.json'
     available_function = ['wait_message']
 
     @override
     @property
     def history(self):
-        return open(self.history_str_path, 'r', encoding='utf-8').read()
+        if len(self.history_str) == 0:
+            self.history_str = open(
+                self.history_str_path, 'r', encoding='utf-8'
+            ).read()
+        return self.history_str
 
     @override
     async def execute(self, prompt: str) -> str:
         async with self.get_executor() as executor:
             # First escape the prompt for JSON compatibility, and remove the enclosing double quotes
             escaped_prompt = json.dumps(prompt)[1:-1]
-            d = json.loads(self.history.replace("给我讲一个冷笑话", escaped_prompt))
+            d = json.loads(self.history.replace("<PLACEHOLDER>", escaped_prompt))
             ActionModelRuntime = executor.controller.registry.create_action_model()
             history = SimplifiedHistoryActionList[ActionModelRuntime](**d)
             await executor.rerun_list_history(history)
@@ -110,20 +119,24 @@ class ListExecutor(ExecutorWrapper):
             )
 
 class TreeExecutor(ExecutorWrapper):
-    history_str_path = './meowdock/resources/yuanbao_history2.json'
+    history_str_path = './meowdock/resources/yuanbao_tree_history.json'
     available_function = ['wait_message']
 
     @override
     @property
     def history(self):
-        return open(self.history_str_path, 'r', encoding='utf-8').read()
+        if len(self.history_str) == 0:
+            self.history_str = open(
+                self.history_str_path, 'r', encoding='utf-8'
+            ).read()
+        return self.history_str
 
     @override
     async def execute(self, prompt: str) -> str:
         async with self.get_executor() as executor:
             # First escape the prompt for JSON compatibility, and remove the enclosing double quotes
             escaped_prompt = json.dumps(prompt)[1:-1]
-            d = json.loads(self.history.replace("给我讲一个冷笑话", escaped_prompt))
+            d = json.loads(self.history.replace("<PLACEHOLDER>", escaped_prompt))
             ActionModelRuntime = executor.controller.registry.create_action_model()
             history = SimplifiedHistoryActionTreeNode[ActionModelRuntime](**d)
             await executor.rerun_tree_history(history)

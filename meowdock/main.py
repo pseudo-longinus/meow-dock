@@ -9,7 +9,7 @@ from meowdock.cmd.fetch.main import fetch_urls
 from meowdock.cmd.search.main import query
 from meowdock.agent.deepsearch import deepsearch as deepsearch_func
 
-from meowdock.cmd.execute.main import execute
+from meowdock.cmd.execute.main import execute, ask_yuanbao
 from meowdock.cmd.login.main import login
 
 app = typer.Typer()
@@ -35,6 +35,7 @@ def smart_fetch(
 app.command(name="search")(query)
 app.command(name="execute")(execute)
 app.command(name="login")(login)
+app.command(name="ask-yuanbao")(ask_yuanbao)
 
 
 # Add deepsearch command

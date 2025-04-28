@@ -21,22 +21,30 @@ from browser_use.dom.history_tree_processor.service import (
     DOMHistoryElement,
     HistoryTreeProcessor,
 )
+from browser_use.dom.views import DOMBaseNode
 from browser_use.telemetry.service import ProductTelemetry
 from browser_use.utils import time_execution_async, time_execution_sync
 import numbers
 from typing import Any
 from meowdock.library.utils.ndarray import NDArray
 import numpy as np
+import io
 
 
+_log = io.StringIO()
 logger = logging.getLogger(__name__)
-ActionModelRuntime = TypeVar('ActionModelRuntime', bound=ActionModel)
+stream_handler = logging.StreamHandler(_log)
+stream_handler.setLevel(logging.NOTSET)
+stream_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s [%(name)s] %(message)s'))
+logger.addHandler(stream_handler)
 
+ActionModelRuntime = TypeVar('ActionModelRuntime', bound=ActionModel)
+T = TypeVar("T", bound=numbers.Number)
 
 class XPathError(Exception): ...
 
 
-T = TypeVar("T", bound=numbers.Number)
+class FallbackToRootError(Exception): ...
 
 
 class SimplifiedHistoryActionNode(BaseModel, Generic[ActionModelRuntime]):
@@ -205,6 +213,16 @@ class Executor(Generic[Context]):
             from meowdock.library.utils.printer import Printer
             self.detailed_logger = Printer('exector_detail_pipe')
 
+        self._current_multi_act = {
+            'action': None,
+            'element': None
+        }
+        self._current_action = {
+            'action': None,
+            'element': None
+        }
+        self._idx_hist = []
+
     def _setup_action_models(self) -> None:
         """Setup dynamic action models from controller's registry"""
         # Initially only include actions with no filters
@@ -250,10 +268,17 @@ class Executor(Generic[Context]):
         check_for_new_elements: bool = True,
     ) -> list[ActionResult]:
         """Execute multiple actions"""
+        self._current_multi_act['action'] = [a.model_dump(exclude_unset=True) for a in actions]
         results = []
 
         cached_selector_map = await self.browser_context.get_selector_map()
         cached_path_hashes = set(e.hash.branch_path_hash for e in cached_selector_map.values())
+
+        for i, act in enumerate(actions):
+            l = []
+            idx = act.get_index()
+            l.append(cached_selector_map.get(idx, None))
+        self._current_multi_act['element'] = l
 
         if self.detailed_logger:
             self.detailed_logger.writeline('Selector Map:')
@@ -306,7 +331,8 @@ class Executor(Generic[Context]):
             try:
                 if self.detailed_logger:
                     self.detailed_logger.writeline('Executing action...')
-
+                self._current_action['action'] = action.model_dump(exclude_unset=True)
+                self._current_action['element'] = cached_selector_map.get(act.get_index(), None)
                 result = await self.controller.act(
                     action,
                     self.browser_context,
@@ -409,7 +435,7 @@ class Executor(Generic[Context]):
                     if history_step.interacted_element[i]
                     else ''
                 )
-                raise XPathError(f'Could not find matching element {i} {xpath} in current page')
+                raise XPathError(f'Failed to locate the element "{xpath}" on current page. ')
 
         result = await self.multi_act(updated_actions)
 
@@ -444,6 +470,7 @@ class Executor(Generic[Context]):
             results = []
             bb = False
             for i, history_item in enumerate(history.history):
+                self._idx_hist.append(0)
                 logger.info(
                     f'Step {i + 1}: Started {list(map(lambda x: x.model_dump_json(exclude_none=True), history_item.action))}'
                 )
@@ -526,23 +553,16 @@ class Executor(Generic[Context]):
                     break
 
                 idx = node.get_next_node_index(mode)
-                print(idx)
+                self._idx_hist.append(idx)
                 if idx <= -1:
                     logger.info(f'Step {i + 1}: All children have been acted, falling back to the parent node')
                     curr_node = node_stack.pop()
                     node = node_stack[-1]
                     if node_stack[-1] == ROOT:
-                        error_msg = f'Step {i + 1}: Falling back to ROOT'
+                        error_msg = f'Step {i + 1}: Falling back to ROOT. '
                         logger.error(error_msg)
                         results.append(ActionResult(error=error_msg))
-                        err = {
-                            'code': 1,
-                            'data': '',
-                            'message': error_msg,
-                        }
-                        import json
-                        print(json.dumps(err, ensure_ascii=False))
-                        break
+                        raise FallbackToRootError(error_msg)
                     curr_idx = node.children.index(curr_node)
                     node._searched[curr_idx] = True
                     continue
@@ -573,6 +593,7 @@ class Executor(Generic[Context]):
                     except Exception as e:
                         retry_count += 1
                         if retry_count == max_retries:
+                            traceback.format_exception(e)
                             error_msg = f'Step {i + 1} failed after {max_retries} attempts: {str(e)}'
                             logger.error(error_msg)
                             results.append(ActionResult(error=error_msg))
@@ -592,3 +613,83 @@ class Executor(Generic[Context]):
         finally:
             if self.detailed_logger: self.detailed_logger.close()   
     
+    async def export_error_log(self, compressed=True, **kw):
+        '''Output crash log. Screenshots, current html page, current json dom tree, current interactable 
+        elements, all registered functions, current actions, action history, and log will be exported.
+        Any additional keyword args will also be added to executor_state.json.
+
+        Args:
+            compressed (bool): Whether zipped or not 
+        '''
+        try:
+            import datetime, json, os
+
+            dir = 'crashlog' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+            
+            ctx = self.browser_context
+            page = await ctx.get_current_page()
+            await page.bring_to_front()
+            await page.wait_for_load_state()
+
+            screenshot = await page.screenshot(
+                full_page=False,
+                animations='disabled',
+            )
+            screenshot_full = await page.screenshot(
+                full_page=True,
+                animations='disabled',
+            )
+            ses = await ctx.get_session()
+            if ses.cached_state:
+                selector_map = ses.cached_state.selector_map
+                element_tree = ses.cached_state.element_tree
+            else:
+                selector_map = {}
+                element_tree = {}
+                
+            def json_default(obj):
+                if hasattr(obj, 'to_json'):
+                    return obj.to_json()
+                elif hasattr(obj, 'model_dump_json'):  # pydantic BaseModel
+                    return obj.model_dump_json(exclude_unset=True)
+                elif hasattr(obj, '__json__'):
+                    return obj.__json__()
+                raise TypeError()
+            
+            executor_state = {
+                'avaliable_functions': list(self.controller.registry.registry.actions.keys()),
+                'current_multi_act': self._current_multi_act,
+                'current_action': self._current_action,
+                'selector_map': selector_map,
+                'element_tree': element_tree,
+                'index_history': self._idx_hist
+            }
+            executor_state |= { k: v for k, v in kw.items() if k not in executor_state.keys() }
+            d = {
+                'screenshot.png': screenshot,
+                'screenshot_full.png': screenshot_full,
+                'executor_state.json': json.dumps(executor_state, default=json_default, ensure_ascii=False).encode('utf-8'),
+                'content.html': (await page.content()).encode('utf-8'),
+                'log.txt': _log.getvalue()
+            }
+            if compressed:
+                import zipfile
+                zipped = io.BytesIO()
+                with zipfile.ZipFile(zipped, mode='w', compression=zipfile.ZIP_LZMA) as f:
+                    for k, v in d.items():
+                        f.writestr(f"{dir}/{k}", v)
+                zipped.seek(0)
+
+                if not os.path.isdir(f'log/executor'):
+                    os.makedirs(f'log/executor', exist_ok=True)
+                with open(f'log/executor/{dir}.zip', 'wb') as f:
+                    f.write(zipped.read())
+            else:
+                if not os.path.isdir(f'log/executor/{dir}'):
+                    os.makedirs(f'log/executor/{dir}', exist_ok=True)
+                for k, v in d.items():
+                    with open(f'log/executor/{dir}/{k}', 'wb') as f:
+                        f.write(v)
+        except Exception as e:
+            traceback.print_exception(e)
+

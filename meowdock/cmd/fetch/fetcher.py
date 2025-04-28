@@ -5,9 +5,9 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union, Literal
 
-from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright, Page, Browser, BrowserContext, Response
 from contextlib import asynccontextmanager
+
 # Import shared libraries
 from meowdock.library.browser import (
     init_logger,
@@ -15,7 +15,7 @@ from meowdock.library.browser import (
     abort_resource,
     get_moderate_resources,
     find_chromium,
-    get_cookies
+    get_cookies,
 )
 import json
 
@@ -52,6 +52,7 @@ class FetchResult:
 
 class Fetcher:
     """Web content fetcher"""
+
     def __init__(self, context: BrowserContext = None):
         init_logger()  # Initialize logger using shared library
         self.default_block_resources = get_moderate_resources()
@@ -66,7 +67,7 @@ class Fetcher:
                 playwright = await async_playwright().start()
                 browser = await playwright.chromium.launch(
                     headless=headless,
-                    executable_path=find_chromium,
+                    executable_path=find_chromium(),
                     args=['--disable-blink-features=AutomationControlled'],
                 )
                 context = await browser.new_context()
@@ -76,9 +77,12 @@ class Fetcher:
             if self.injected_context:
                 ...
             else:
-                if context: await context.close()
-                if browser: await browser.close()
-                if playwright: await playwright.stop()
+                if context:
+                    await context.close()
+                if browser:
+                    await browser.close()
+                if playwright:
+                    await playwright.stop()
 
     async def _fetch_url(
         self, url: str, options: FetchOptions, index: Optional[int] = None
@@ -131,7 +135,9 @@ class Fetcher:
                     raise Exception(f"HTTP error: {response.status}")
 
                 try:
-                    await page.wait_for_function("document.readyState === 'complete'", timeout=10000)
+                    await page.wait_for_function(
+                        "document.readyState === 'complete'", timeout=10000
+                    )
                 except TimeoutError:
                     raise Exception(f"HTTP error: {response.status}.")
 
@@ -155,10 +161,10 @@ class Fetcher:
 
                 if response.status >= 400:
                     lhtml = html.lower()
-                    if len(html) < 3000 or (len(html) < 5000
-                            and ('Access Denied' in lhtml or 'error' in lhtml)):
-                        raise Exception(
-                            f"HTTP error: {response.status}! {len(html)}")
+                    if len(html) < 3000 or (
+                        len(html) < 5000 and ('Access Denied' in lhtml or 'error' in lhtml)
+                    ):
+                        raise Exception(f"HTTP error: {response.status}! {len(html)}")
                 # Process content
                 if options.extractContent:
                     content = await extract_main_content(
@@ -174,7 +180,6 @@ class Fetcher:
                 # Limit content length
                 if options.maxLength and len(content) > options.maxLength:
                     content = content[: options.maxLength]
-
 
                 result.success = True
                 result.content = content

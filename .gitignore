@@ -8,6 +8,7 @@
 !**/resources/*.json
 chrome_data/
 .cache/
+log/
 
 # Python build and release related
 dist/
