@@ -18,7 +18,7 @@
 
 ## 目标用户
 
-本项目主要服务于 **Agent，工作流自动化，或其它端侧设备操作场景的个人开发者与企业**。
+本项目主要服务于 **从事 Agent、工作流自动化和其他端侧设备操作场景的个人开发者和企业。**。
 
 ## 功能与特性 ✨
 
@@ -52,7 +52,7 @@
     ```
 
 
-## 例子1：使用元宝进行提问并拿到返回结果 🚀
+## 例子1：向元宝请求个冷笑话，并获得返回结果 🚀
 
 ```python
 from meowdock.docking.docking_factory import DockingFactory
@@ -89,7 +89,7 @@ def main():
     # login(urls=["https://yuanbao.tencent.com/chat/"])
     # 定义参数
     search_query = "黄金为什么涨"
-    search_engine = "bing"
+    search_engine = "baidu"
 
     try:
         # 初始化工厂并获取docking实例
@@ -144,14 +144,11 @@ if __name__ == "__main__":
 ## FAQ 🗂️
 
 1. 需要登录网站吗？
-是的，你需要的，但是因为程序使用了自己的browser，所以您需要运行login.py进行登录，而不是直接从常用浏览器登录。 我们接下来会开发更好用的登录管理模块。
+是的，您需要的。因为程序使用了自己的browser，所以您需要运行login.py进行登录，而不是直接从常用浏览器登录。 我们接下来会开发更好用的登录管理模块。
 
 2. 目前支持哪些网站？
 目前支持元宝和百度搜索，会陆续增加网站。您可以将您希望增加的支持网站发给我们，填写在这里：
-英文版
-https://docs.qq.com/form/page/DWUZVU2hZbk5DSXVm
 
-中文版
 https://docs.qq.com/form/page/DWU9rZU5nTVFqT0JN
 
 
@@ -169,15 +166,9 @@ git pull origin main
 
 本项目开源代码库对应community版本，采用 [Apache License 2.0](LICENSE) 授权。
 
-## 第三方library：
+## Third-party Code and License Compliance
 
-This project uses the following third-party libraries, which are licensed under the MIT License:
-
-- [Browser-Use](https://github.com/browser-use/browser-use) Browser Use: Enable AI to control your browser
-  - License: MIT
-  - Copyright: Müller, Magnus and Žunič, Gregor (2024)
-  - Modifications: Modified for Adaptation for web docking
-  - License: [LICENSE](https://opensource.org/licenses/MIT)
+This project includes code derived from the [browser-use](https://github.com/browser-use/browser-use) project, which is licensed under the MIT License. See LICENSE.browser-use for details.
 
 
 

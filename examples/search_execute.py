@@ -15,7 +15,7 @@ def main():
     # login(urls=["https://yuanbao.tencent.com/chat/"])
     # Define parameters
     search_query = "黄金为什么涨"
-    search_engine = "bing"
+    search_engine = "baidu"
 
     try:
         # Initialize factory and get docking instances

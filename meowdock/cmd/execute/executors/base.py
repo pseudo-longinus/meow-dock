@@ -74,7 +74,7 @@ class ExecutorWrapper(ABC):
                 raise
             args = list(e.args)
             args[0] += f'\nThis is probably caused by not being logged in. \n' \
-                'You can sumbit the latest log file under "{os.getcwd()}/log/" to us by @ or github issuse.'
+                'You can sumbit the latest log file under "{os.getcwd()}/log/" to us by guanzhao3000@gmail.com or by github issuse.'
             raise e.__class__(args)
         finally:
             if ctx:

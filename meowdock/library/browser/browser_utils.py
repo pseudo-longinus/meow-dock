@@ -84,11 +84,11 @@ def _find_chromium() -> str:
         paths = windows_paths
         system_name = "Windows"
 
-    logging.info(f"Searching for browser on {system_name} system...")
+    logging.debug(f"Searching for browser on {system_name} system...")
 
     # Check all possible paths
     for path in paths:
-        logging.info(f"Checking path: {path}")
+        logging.debug(f"Checking path: {path}")
         if check_browser_executable(path):
             logging.info(f"Will use browser: {path}")
             return path

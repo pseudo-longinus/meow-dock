@@ -1,3 +1,8 @@
+# Portions of this file (approximately 250 lines) are adapted from "browser-use" by Müller, Magnus and Žunič, Gregor
+# licensed under the MIT License.
+# Original repository: https://github.com/browser-use/browser-use
+# See the LICENSE file in the project root for the full license text.
+
 import asyncio
 import traceback
 from browser_use.controller.registry.views import ActionModel
@@ -106,8 +111,6 @@ class SimplifiedHistoryActionTreeNode(BaseModel, Generic[ActionModelRuntime]):
         if len(self.children) == 0:
             return -1
         if np.all(self._searched.arr):
-            print(self._searched.arr
-         )
             return -2
         if mode == 'random':
             next_node_index = np.random.choice(range(len(self.children)), p=self.get_real_probability(mode=mode))
